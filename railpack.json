@@ -1,4 +1,8 @@
 {
-  "language": "php",
-  "start": "php -S 0.0.0.0:$PORT -t ."
+  "deploy": {
+    "startCommand": "php -S 0.0.0.0:$PORT -t /app"
+  },
+  "build": {
+    "nixpacksVersion": "1"
+  }
 }
