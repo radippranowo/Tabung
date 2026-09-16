@@ -343,7 +343,7 @@ header{height:72px;background:#fff;display:flex;align-items:center;gap:14px;padd
 <div class="nav" id="nav"></div>
 </aside>
 <main>
-<header><button aria-label="Menu" id="menuBtn">☰</button><div><b id="pageTitle">Dashboard</b><div class="head-sub">Gudang &amp; Tabung LPG 12 Kg</div></div><div style="display:flex;gap:6px;margin-left:auto"><button type="button" id="syncBtn" style="background:#0284c7;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer">🔄 Sync</button><button class="logout" id="logout">Keluar</button></div></header>
+<header><button aria-label="Menu" id="menuBtn">☰</button><div><b id="pageTitle">Dashboard</b><div class="head-sub">Gudang &amp; Tabung LPG 12 Kg</div></div><button class="logout" id="logout">Keluar</button></header>
 <div class="content" id="content"></div>
 </main>
 </section>
@@ -352,19 +352,7 @@ header{height:72px;background:#fff;display:flex;align-items:center;gap:14px;padd
 var locations=["Site Air Upas","Kelampai","Kebanteng/Hampul","Repin","SJYE","PT BAP Pagar Mentimun","PT RKA Pesaguan","Balai Berkuak","Tanah Merah Tayap","WS Sungai Awan"];
 var savedMasterLokasi=JSON.parse(localStorage.getItem("ktu_lpg_master_lokasi_v1")||"null");
 if(Array.isArray(savedMasterLokasi) && savedMasterLokasi.length) locations=savedMasterLokasi.slice();
-function saveMasterLokasi(){
-  localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
-  // Sync lokasi ke server juga
-  try{
-    fetch("api.php?action=direct_save",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({username:"admin",data:data,settings:settings,masterLokasi:locations||[]})
-    }).then(function(r){return r.json();}).then(function(res){
-      console.log("[KTU] saveMasterLokasi sync:",res.ok?"OK":"GAGAL",res);
-    }).catch(function(e){console.warn("[KTU] saveMasterLokasi sync error:",e);});
-  }catch(e){console.warn("[KTU] saveMasterLokasi sync error:",e);}
-}
+function saveMasterLokasi(){localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));}
 var data=JSON.parse(localStorage.getItem("ktu_lpg_data_v2")||"null")||{tabung:[],keluar:[],kembali:[],refill:[],aset:[],opname:[],hutang:[],stokAsetAdjustment:{},stokHarian:[]};
 if(!Array.isArray(data.stokHarian)) data.stokHarian=[];
 var settings=JSON.parse(localStorage.getItem("ktu_lpg_settings_v2")||"null")||{tarifRefill:0,tarifAset:0};
@@ -375,29 +363,14 @@ function saveAll(){
     localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
     var saved=localStorage.getItem("ktu_lpg_data_v2");
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
-    // Sync ke server (hanya jika sudah login)
-    if(window.isLoggedIn){
-      try{
-        var _payload={username:"admin",data:data,settings:settings,masterLokasi:locations||[]};
-        console.log("[KTU] saveAll -> server, data entries:",
-          "keluar:"+data.keluar.length,
-          "kembali:"+data.kembali.length,
-          "tabung:"+data.tabung.length,
-          "refill:"+data.refill.length
-        );
-        fetch("api.php?action=direct_save",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify(_payload)
-        }).then(function(r){return r.json();}).then(function(res){
-          if(res.ok){
-            console.log("[KTU] Server sync OK, saved_at:",res.saved_at);
-          }else{
-            console.warn("[KTU] Server sync GAGAL:",res.msg,res);
-          }
-        }).catch(function(e){console.warn("[KTU] Server sync fetch error:",e);});
-      }catch(e){console.warn("[KTU] Server sync error:",e);}
-    }
+    // Sync ke server (background, tidak blokir UI)
+    try{
+      fetch("api.php?action=direct_save",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations})
+      }).catch(function(){});
+    }catch(_){}
     return true;
   }catch(err){
     console.error("KTU saveAll gagal:",err);
@@ -543,10 +516,11 @@ window.login=function(e){
   var u=(document.getElementById("u").value||"").trim();
   var p=document.getElementById("p").value||"";
   if(u==="admin" && p==="admin123"){
-    window.isLoggedIn=true;
-    document.getElementById("err").textContent="";
-    // Ambil data terbaru dari server dulu, baru tampil app (agar device lain sync)
-    function doShow(){
+    document.getElementById("err").textContent="Memuat data...";
+    document.getElementById("go").disabled=true;
+    function doShowApp(){
+      document.getElementById("err").textContent="";
+      document.getElementById("go").disabled=false;
       document.getElementById("login").style.display="none";
       document.getElementById("app").style.display="block";
       try{
@@ -558,48 +532,27 @@ window.login=function(e){
         if(c)c.innerHTML='<div class="panel"><h3>Dashboard</h3><p class="muted">Login berhasil. Dashboard sedang dimuat ulang.</p></div>';
       }
     }
+    // Tarik data dari server dulu, jika gagal pakai localStorage
     fetch("api.php?action=direct_load",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({username:"admin"})
     }).then(function(r){return r.json();}).then(function(res){
-      console.log("[KTU] direct_load response:",JSON.stringify(res).substring(0,300));
       if(res.ok && res.data){
         var d=res.data;
-        // Overwrite jika server punya data apapun
-        var sData=d.data;
-        var hasData=sData && (
-          (Array.isArray(sData.keluar) && sData.keluar.length>0) ||
-          (Array.isArray(sData.kembali) && sData.kembali.length>0) ||
-          (Array.isArray(sData.tabung) && sData.tabung.length>0) ||
-          (Array.isArray(sData.refill) && sData.refill.length>0) ||
-          (Array.isArray(sData.aset) && sData.aset.length>0) ||
-          (Array.isArray(sData.opname) && sData.opname.length>0) ||
-          (Array.isArray(sData.hutang) && sData.hutang.length>0) ||
-          (sData.stokAsetAdjustment && Object.keys(sData.stokAsetAdjustment).length>0) ||
-          (Array.isArray(d.masterLokasi) && d.masterLokasi.length>0)
-        );
-        if(hasData){
-          if(sData && (!sData.stokAsetAdjustment || Array.isArray(sData.stokAsetAdjustment))){
-            sData.stokAsetAdjustment={};
-          }
-          if(sData && !Array.isArray(sData.stokHarian)){
-            sData.stokHarian=[];
-          }
-          data=sData;
-          if(d.settings && Object.keys(d.settings).length) settings=d.settings;
-          if(Array.isArray(d.masterLokasi) && d.masterLokasi.length) locations=d.masterLokasi;
-          // Sinkronkan pointer global window agar plugin/komponen lain melihat data terbaru
-          window.data=data;
-          window.locations=locations;
-          window.settings=settings;
-          localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
-          localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
-          localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
-        }
+        if(d.data && typeof d.data==='object') { data=d.data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }
+        if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)) settings=d.settings;
+        var svLocs=d.locations||d.masterLokasi;
+        if(Array.isArray(svLocs) && svLocs.length) locations=svLocs.slice();
+        // Update localStorage agar offline juga sinkron
+        localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
+        localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
+        localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
       }
-    }).catch(function(e){console.warn("[KTU] Load server gagal:",e);}).finally(function(){
-      doShow();
+      doShowApp();
+    }).catch(function(){
+      // Server tidak bisa diakses, lanjut dengan data lokal
+      doShowApp();
     });
   } else {
     document.getElementById("err").textContent="Username atau password salah.";
@@ -608,64 +561,6 @@ window.login=function(e){
 document.getElementById("go").onclick=function(e){window.login(e);};
 document.getElementById("loginForm").onsubmit=function(e){window.login(e);};
 document.getElementById("p").onkeydown=function(e){if(e.key==="Enter")window.login(e)};
-// JANGAN saveAll() di sini: user belum login, jangan kirim data kosong ke server.
-try{localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));}catch(e){}
-
-// Fungsi Sinkron Manual (tombol 🔄 Sync di header)
-window.syncFromServer=function(silent){
-  var btn=document.getElementById("syncBtn");
-  if(btn) btn.textContent="⏳ Sync...";
-  fetch("api.php?action=direct_load",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({username:"admin"})
-  }).then(function(r){return r.json();}).then(function(res){
-    if(res.ok && res.data){
-      var d=res.data;
-      var sData=d.data;
-      var hasData=sData && (
-        (Array.isArray(sData.keluar) && sData.keluar.length>0) ||
-        (Array.isArray(sData.kembali) && sData.kembali.length>0) ||
-        (Array.isArray(sData.tabung) && sData.tabung.length>0) ||
-        (Array.isArray(sData.refill) && sData.refill.length>0) ||
-        (Array.isArray(sData.aset) && sData.aset.length>0) ||
-        (Array.isArray(sData.opname) && sData.opname.length>0) ||
-        (Array.isArray(sData.hutang) && sData.hutang.length>0) ||
-        (sData.stokAsetAdjustment && Object.keys(sData.stokAsetAdjustment).length>0) ||
-        (Array.isArray(d.masterLokasi) && d.masterLokasi.length>0)
-      );
-      if(hasData){
-        if(sData && (!sData.stokAsetAdjustment || Array.isArray(sData.stokAsetAdjustment))){
-          sData.stokAsetAdjustment={};
-        }
-        if(sData && !Array.isArray(sData.stokHarian)){
-          sData.stokHarian=[];
-        }
-        data=sData;
-        if(d.settings && Object.keys(d.settings).length) settings=d.settings;
-        if(Array.isArray(d.masterLokasi) && d.masterLokasi.length) locations=d.masterLokasi;
-        window.data=data;
-        window.locations=locations;
-        window.settings=settings;
-        localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
-        localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
-        localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
-        if(!silent) alert("Sinkronisasi berhasil! Data terbaru sudah dimuat.");
-        if(typeof show==="function") show(window.currentPage||"dashboard");
-      }else{
-        if(!silent) alert("Server belum memiliki data.");
-      }
-    }
-  }).catch(function(e){
-    console.warn("[KTU] syncFromServer error:",e);
-    if(!silent) alert("Gagal menghubungi server: "+(e.message||e));
-  }).finally(function(){
-    if(btn) btn.textContent="🔄 Sync";
-  });
-};
-var _sBtn=document.getElementById("syncBtn");
-if(_sBtn) _sBtn.onclick=function(){window.syncFromServer(false);};
-
 document.getElementById("logout").onclick=function(){document.getElementById("app").style.display="none";document.getElementById("login").style.display="flex"};
 document.getElementById("menuBtn").onclick=function(){document.getElementById("sidebar").classList.toggle("open");document.getElementById("overlay").classList.toggle("show")};
 document.getElementById("overlay").onclick=function(){document.getElementById("sidebar").classList.remove("open");document.getElementById("overlay").classList.remove("show")};
@@ -2741,7 +2636,6 @@ lokasi=function(selected){
 /* Expose core data/helpers to the final monitoring filter patch. */
 window.data=data;
 window.locations=locations;
-window.settings=settings;
 window.sameLokasi=sameLokasi;
 window.normKet=normKet;
 window.ketIsiUlang=ketIsiUlang;
@@ -2749,11 +2643,6 @@ window.ketPenambahanAset=ketPenambahanAset;
 window.parseBiaya=parseBiaya;
 window.esc=esc;
 window.money=money;
-window.tubeFilterArr=tubeFilterArr;
-window.getTubeAdjustment=getTubeAdjustment;
-window.tubeAdjustmentKey=tubeAdjustmentKey;
-window.setTubeAdjustment=setTubeAdjustment;
-window.saveAll=saveAll;
 
 /* End development layer */
 })();
@@ -2887,21 +2776,16 @@ window.printMonitoringPDF=function(){
   }
   function patchStat(l){
     var from=window.monitoringFilter.from||'', to=window.monitoringFilter.to||'';
-    var fnFilter=typeof window.tubeFilterArr==='function'?window.tubeFilterArr:function(a){return a||[];};
-    var fnAdj=typeof window.getTubeAdjustment==='function'?window.getTubeAdjustment:function(){return 0;};
-    var fnIsi=typeof ketIsiUlang==='function'?ketIsiUlang:(typeof window.ketIsiUlang==='function'?window.ketIsiUlang:function(){return false;});
-    var fnAset=typeof ketPenambahanAset==='function'?ketPenambahanAset:(typeof window.ketPenambahanAset==='function'?window.ketPenambahanAset:function(){return false;});
-    var fnSame=typeof sameLokasi==='function'?sameLokasi:(typeof window.sameLokasi==='function'?window.sameLokasi:function(a,b){return String(a).trim().toLowerCase()===String(b).trim().toLowerCase();});
-    var allK=fnFilter(data.keluar).filter(function(x){return fnSame(x.lokasi,l);});
-    var allM=fnFilter(data.kembali).filter(function(x){return fnSame(x.lokasi,l);});
+    var allK=tubeFilterArr(data.keluar).filter(function(x){return sameLokasi(x.lokasi,l);});
+    var allM=tubeFilterArr(data.kembali).filter(function(x){return sameLokasi(x.lokasi,l);});
     var k=(from||to)?allK.filter(patchPeriod):allK;
     var m=(from||to)?allM.filter(patchPeriod):allM;
     var ks=to?allK.filter(function(x){return String(x.tanggal||'').slice(0,10)<=to;}):allK;
     var ms=to?allM.filter(function(x){return String(x.tanggal||'').slice(0,10)<=to;}):allM;
     var qty=function(a){return a.reduce(function(s,x){return s+Number(x.qty||0);},0);};
-    var isi=k.filter(function(x){return fnIsi(x.keterangan);});
-    var aset=k.filter(function(x){return fnAset(x.keterangan);});
-    var manual=Number(fnAdj(l)||0);
+    var isi=k.filter(function(x){return ketIsiUlang(x.keterangan);});
+    var aset=k.filter(function(x){return ketPenambahanAset(x.keterangan);});
+    var manual=Number(getTubeAdjustment(l)||0);
     var asetSnap=ks.filter(function(x){return ketPenambahanAset(x.keterangan);});
     var stokAset=manual+qty(asetSnap);
     var keluarNonAset=ks.filter(function(x){return !ketPenambahanAset(x.keterangan);});
@@ -3122,8 +3006,7 @@ function calc(l){
  var d=window.data||{},K=(d.keluar||[]).filter(function(x){return eq(x.lokasi,l)}),M=(d.kembali||[]).filter(function(x){return eq(x.lokasi,l)});
  var PK=K.filter(period),PM=M.filter(period),SK=MF.to?K.filter(function(x){return key(x.tanggal)<=MF.to}):K,SM=MF.to?M.filter(function(x){return key(x.tanggal)<=MF.to}):M;
  var asetSnap=SK.filter(function(x){return isAset(x.keterangan)}),nonAsetSnap=SK.filter(function(x){return !isAset(x.keterangan)});
- var fnAdj=typeof window.getTubeAdjustment==='function'?window.getTubeAdjustment:function(){return 0;};
- var manual=fnAdj(l),stokAset=manual+q(asetSnap),stokLokasi=stokAset+q(nonAsetSnap)-q(SM),sel=stokLokasi-stokAset;
+ var manual=getTubeAdjustment(l),stokAset=manual+q(asetSnap),stokLokasi=stokAset+q(nonAsetSnap)-q(SM),sel=stokLokasi-stokAset;
  var isi=PK.filter(function(x){return isIsi(x.keterangan)}),aset=PK.filter(function(x){return isAset(x.keterangan)});
  return {stokAset:stokAset,stokLokasi:stokLokasi,keluar:q(PK),masuk:q(PM),isiUlang:q(isi),aset:q(aset),hutang:Math.max(0,-sel),lebih:Math.max(0,sel),biaya:isi.reduce(function(n,x){return n+Number(x.qty||0)*parseCost(x.biaya)},0),biayaAset:aset.reduce(function(n,x){return n+Number(x.qty||0)*parseCost(x.biaya)},0)}
 }
@@ -3994,6 +3877,9 @@ window.openMonitoringDetail=function(){
   };
 
   window.ktuEdit = function(type, i){
+    if(type!=='keluar' && type!=='kembali'){
+      if(typeof window.editRow==='function') return window.editRow(type,i);
+    }
     var x=arr2(type)[i];
     if(!x){ alert('Data tidak ditemukan.'); return; }
 
@@ -4038,6 +3924,9 @@ window.openMonitoringDetail=function(){
   };
 
   window.ktuDelete = function(type, i){
+    if(type!=='keluar' && type!=='kembali'){
+      if(typeof window.deleteRow==='function') return window.deleteRow(type,i);
+    }
     var a=arr2(type), x=a[i];
     if(!x){ alert('Data tidak ditemukan.'); return; }
     if(!window.confirm('Hapus data Tabung '+(type==='keluar'?'Keluar':'Masuk')+' ini?\\nTanggal: '+(x.tanggal||'-')+'\\nJumlah: '+Number(x.qty||0)+' tabung')) return;
@@ -4085,7 +3974,7 @@ window.openMonitoringDetail=function(){
       if(!td || !/Aksi/i.test((table.tHead&&table.tHead.rows[0].lastElementChild||{}).textContent||'') && td.cellIndex<1) return;
       var first=tr.firstElementChild;
       var no=first ? Number(first.textContent.trim()) : 0;
-      if(!no || !indexes[no-1]) return;
+      if(!no || typeof indexes[no-1] !== 'number') return;
       if(!td.querySelector('.ktu-edit')){
         td.innerHTML=window.actionBtns(page,indexes[no-1]);
       }
