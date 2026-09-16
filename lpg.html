@@ -358,6 +358,9 @@ var data=JSON.parse(localStorage.getItem("ktu_lpg_data_v2")||"null")||{tabung:[]
 if(!Array.isArray(data.stokHarian)) data.stokHarian=[];
 var settings=JSON.parse(localStorage.getItem("ktu_lpg_settings_v2")||"null")||{tarifRefill:0,tarifAset:0};
 function saveAll(){
+  if(window.data) data=window.data;
+  if(window.settings) settings=window.settings;
+  if(window.locations) locations=window.locations;
   if(typeof settings.tarifAset!=="number")settings.tarifAset=0;
   try{
     localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
@@ -373,6 +376,11 @@ function saveAll(){
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
           keepalive:true
+        }).then(function(r){return r.json();}).then(function(res){
+          if(res && res.saved_at){
+            var t = new Date(res.saved_at).getTime();
+            if(!isNaN(t) && t > 0) localStorage.setItem("ktu_lpg_last_save_v1", String(t));
+          }
         }).catch(function(){});
       }catch(_){}
     }
@@ -566,17 +574,17 @@ window.login=function(e){
           (Array.isArray(data.aset)&&data.aset.length>0)||
           (Array.isArray(data.opname)&&data.opname.length>0)
         ));
-        // Pakai server jika: data lokal kosong, ATAU data server lebih baru dari last save lokal
-        var useServer = (!localHasData && d.data && typeof d.data === 'object') || (serverHasData && serverUpdatedAt >= localLastSave);
-        // Lokal lebih baru (baru hapus/edit sebelum refresh) — push lokal ke server
-        if(localHasData && localLastSave > serverUpdatedAt && localLastSave > 0){
+        var isBrandNewDevice = (localLastSave === 0);
+        var useServer = isBrandNewDevice || (serverUpdatedAt > localLastSave);
+
+        // Jika lokal lebih baru daripada server, sinkronkan lokal ke server
+        if(!useServer && localLastSave > serverUpdatedAt && localLastSave > 0){
           fetch("api.php?action=direct_save",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
             keepalive:true
           }).catch(function(){});
-          useServer=false;
         }
         if(useServer){
           if(d.data && typeof d.data==='object') { data=d.data; window.data=data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }

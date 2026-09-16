@@ -64,32 +64,6 @@ try {
                 $store['users'][$username] = ['created_at' => date('Y-m-d H:i:s')];
             }
 
-            // Cegah penimpaan tidak sengaja jika client mengirim data kosong padahal server ada isinya
-            $clientHasData = false;
-            if (is_array($jsonData)) {
-                foreach (['kembali', 'keluar', 'tabung', 'refill', 'aset', 'opname', 'hutang'] as $k) {
-                    if (!empty($jsonData[$k])) {
-                        $clientHasData = true;
-                        break;
-                    }
-                }
-            }
-            $serverHasExisting = false;
-            $existingData = $store['users'][$username]['data_json'] ?? [];
-            if (is_array($existingData)) {
-                foreach (['kembali', 'keluar', 'tabung', 'refill', 'aset', 'opname', 'hutang'] as $k) {
-                    if (!empty($existingData[$k])) {
-                        $serverHasExisting = true;
-                        break;
-                    }
-                }
-            }
-            if ($serverHasExisting && !$clientHasData && empty($input['allow_empty'])) {
-                $response['ok'] = true;
-                $response['ignored'] = 'empty_overwrite_rejected';
-                break;
-            }
-
             // Pastikan data_json selalu tersimpan
             $store['users'][$username]['data_json'] = $jsonData;
             if (!empty($settingsData)) {
