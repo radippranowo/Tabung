@@ -352,7 +352,19 @@ header{height:72px;background:#fff;display:flex;align-items:center;gap:14px;padd
 var locations=["Site Air Upas","Kelampai","Kebanteng/Hampul","Repin","SJYE","PT BAP Pagar Mentimun","PT RKA Pesaguan","Balai Berkuak","Tanah Merah Tayap","WS Sungai Awan"];
 var savedMasterLokasi=JSON.parse(localStorage.getItem("ktu_lpg_master_lokasi_v1")||"null");
 if(Array.isArray(savedMasterLokasi) && savedMasterLokasi.length) locations=savedMasterLokasi.slice();
-function saveMasterLokasi(){localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));}
+function saveMasterLokasi(){
+  localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
+  // Sync lokasi ke server juga
+  try{
+    fetch("api.php?action=direct_save",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:"admin",data:data,settings:settings,masterLokasi:locations||[]})
+    }).then(function(r){return r.json();}).then(function(res){
+      console.log("[KTU] saveMasterLokasi sync:",res.ok?"OK":"GAGAL",res);
+    }).catch(function(e){console.warn("[KTU] saveMasterLokasi sync error:",e);});
+  }catch(e){console.warn("[KTU] saveMasterLokasi sync error:",e);}
+}
 var data=JSON.parse(localStorage.getItem("ktu_lpg_data_v2")||"null")||{tabung:[],keluar:[],kembali:[],refill:[],aset:[],opname:[],hutang:[],stokAsetAdjustment:{},stokHarian:[]};
 if(!Array.isArray(data.stokHarian)) data.stokHarian=[];
 var settings=JSON.parse(localStorage.getItem("ktu_lpg_settings_v2")||"null")||{tarifRefill:0,tarifAset:0};
@@ -363,15 +375,26 @@ function saveAll(){
     localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
     var saved=localStorage.getItem("ktu_lpg_data_v2");
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
-    // Sync ke server (fire and forget, tidak blokir UI, tidak ubah logika)
+    // Sync ke server
     try{
+      var _payload={username:"admin",data:data,settings:settings,masterLokasi:locations||[]};
+      console.log("[KTU] saveAll -> server, data entries:",
+        "keluar:"+data.keluar.length,
+        "kembali:"+data.kembali.length,
+        "tabung:"+data.tabung.length,
+        "refill:"+data.refill.length
+      );
       fetch("api.php?action=direct_save",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({username:"admin",data:data,settings:settings,masterLokasi:locations||[]})
+        body:JSON.stringify(_payload)
       }).then(function(r){return r.json();}).then(function(res){
-        if(!res.ok) console.warn("[KTU] Server sync gagal:",res.msg);
-      }).catch(function(e){console.warn("[KTU] Server sync error:",e);});
+        if(res.ok){
+          console.log("[KTU] Server sync OK, saved_at:",res.saved_at);
+        }else{
+          console.warn("[KTU] Server sync GAGAL:",res.msg,res);
+        }
+      }).catch(function(e){console.warn("[KTU] Server sync fetch error:",e);});
     }catch(e){console.warn("[KTU] Server sync error:",e);}
     return true;
   }catch(err){
@@ -537,6 +560,7 @@ window.login=function(e){
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({username:"admin"})
     }).then(function(r){return r.json();}).then(function(res){
+      console.log("[KTU] direct_load response:",JSON.stringify(res).substring(0,300));
       if(res.ok && res.data){
         var d=res.data;
         // Overwrite jika server punya data apapun
