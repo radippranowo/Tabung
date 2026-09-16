@@ -1067,8 +1067,8 @@ function dashboardLocStatMonthly(l,start,end){
     return !!d && d<=b;
   }
   function sameTypeAndLocation(x){
-    var active=String(window.activeTubeType||localStorage.getItem('KTU_ACTIVE_TUBE_TYPE')||'LPG 12 Kg');
-    return x && String(x.tubeType||'LPG 12 Kg')===active && sameLokasi(x.lokasi,l);
+    var active=String(window.activeTubeType||localStorage.getItem('KTU_ACTIVE_TUBE_TYPE')||'LPG 12 Kg').trim();
+    return x && String(x.tubeType||'LPG 12 Kg').trim()===active && sameLokasi(x.lokasi,l);
   }
   function monthArr(arr){return (arr||[]).filter(function(x){return sameTypeAndLocation(x)&&inRange(x,start,end);});}
   function historyArr(arr){return (arr||[]).filter(function(x){return sameTypeAndLocation(x)&&beforeOrAt(x,end);});}
@@ -4229,9 +4229,9 @@ window.openMonitoringDetail=function(){
    */
   window.tubeRows=function(type){
     var a=(window.data && window.data[type]) || [];
-    var active=currentType();
+    var active=currentType().trim();
     return a.map(function(x,i){return {x:x,i:i};}).filter(function(o){
-      return o.x && String(o.x.tubeType||'')===String(active);
+      return o.x && String(o.x.tubeType||'LPG 12 Kg').trim()===active;
     });
   };
 
@@ -4276,7 +4276,7 @@ window.openMonitoringDetail=function(){
   }
 
   function isActive(x){
-    return x && String(x.tubeType||'')===String(activeType());
+    return x && String(x.tubeType||'LPG 12 Kg').trim()===String(activeType()).trim();
   }
 
   /* Perbaiki semua data transaksi lama yang belum punya tubeType.
