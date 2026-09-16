@@ -57,9 +57,42 @@ try {
             if (!isset($store['users'][$username])) {
                 $store['users'][$username] = ['created_at' => date('Y-m-d H:i:s')];
             }
+
+            // SAFETY: Jangan biarkan client baru dengan data kosong menimpa data server yang sudah ada
+            $existingData = $store['users'][$username]['data_json'] ?? [];
+            $hasExisting = false;
+            if (is_array($existingData)) {
+                foreach (['keluar', 'kembali', 'tabung', 'refill', 'aset', 'opname', 'hutang', 'stokHarian'] as $k) {
+                    if (!empty($existingData[$k]) && is_array($existingData[$k]) && count($existingData[$k]) > 0) {
+                        $hasExisting = true;
+                        break;
+                    }
+                }
+            }
+            $incomingHasData = false;
+            if (is_array($jsonData)) {
+                foreach (['keluar', 'kembali', 'tabung', 'refill', 'aset', 'opname', 'hutang', 'stokHarian'] as $k) {
+                    if (!empty($jsonData[$k]) && is_array($jsonData[$k]) && count($jsonData[$k]) > 0) {
+                        $incomingHasData = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($hasExisting && !$incomingHasData && empty($input['force_empty'])) {
+                $response['ok'] = true;
+                $response['msg'] = 'Skipped empty overwrite to preserve existing server data';
+                $response['saved_at'] = date('Y-m-d H:i:s');
+                break;
+            }
+
             $store['users'][$username]['data_json'] = $jsonData;
-            $store['users'][$username]['settings_json'] = $settingsData;
-            $store['users'][$username]['master_lokasi_json'] = $masterLokasiData;
+            if (!empty($settingsData)) {
+                $store['users'][$username]['settings_json'] = $settingsData;
+            }
+            if (!empty($masterLokasiData)) {
+                $store['users'][$username]['master_lokasi_json'] = $masterLokasiData;
+            }
             $store['users'][$username]['updated_at'] = date('Y-m-d H:i:s');
             
             if (saveJSON($jsonFile, $store)) {

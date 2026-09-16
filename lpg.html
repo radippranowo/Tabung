@@ -375,27 +375,29 @@ function saveAll(){
     localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
     var saved=localStorage.getItem("ktu_lpg_data_v2");
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
-    // Sync ke server
-    try{
-      var _payload={username:"admin",data:data,settings:settings,masterLokasi:locations||[]};
-      console.log("[KTU] saveAll -> server, data entries:",
-        "keluar:"+data.keluar.length,
-        "kembali:"+data.kembali.length,
-        "tabung:"+data.tabung.length,
-        "refill:"+data.refill.length
-      );
-      fetch("api.php?action=direct_save",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(_payload)
-      }).then(function(r){return r.json();}).then(function(res){
-        if(res.ok){
-          console.log("[KTU] Server sync OK, saved_at:",res.saved_at);
-        }else{
-          console.warn("[KTU] Server sync GAGAL:",res.msg,res);
-        }
-      }).catch(function(e){console.warn("[KTU] Server sync fetch error:",e);});
-    }catch(e){console.warn("[KTU] Server sync error:",e);}
+    // Sync ke server (hanya jika sudah login)
+    if(window.isLoggedIn){
+      try{
+        var _payload={username:"admin",data:data,settings:settings,masterLokasi:locations||[]};
+        console.log("[KTU] saveAll -> server, data entries:",
+          "keluar:"+data.keluar.length,
+          "kembali:"+data.kembali.length,
+          "tabung:"+data.tabung.length,
+          "refill:"+data.refill.length
+        );
+        fetch("api.php?action=direct_save",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify(_payload)
+        }).then(function(r){return r.json();}).then(function(res){
+          if(res.ok){
+            console.log("[KTU] Server sync OK, saved_at:",res.saved_at);
+          }else{
+            console.warn("[KTU] Server sync GAGAL:",res.msg,res);
+          }
+        }).catch(function(e){console.warn("[KTU] Server sync fetch error:",e);});
+      }catch(e){console.warn("[KTU] Server sync error:",e);}
+    }
     return true;
   }catch(err){
     console.error("KTU saveAll gagal:",err);
@@ -541,6 +543,7 @@ window.login=function(e){
   var u=(document.getElementById("u").value||"").trim();
   var p=document.getElementById("p").value||"";
   if(u==="admin" && p==="admin123"){
+    window.isLoggedIn=true;
     document.getElementById("err").textContent="";
     // Ambil data terbaru dari server dulu, baru tampil app (agar device lain sync)
     function doShow(){
@@ -605,7 +608,8 @@ window.login=function(e){
 document.getElementById("go").onclick=function(e){window.login(e);};
 document.getElementById("loginForm").onsubmit=function(e){window.login(e);};
 document.getElementById("p").onkeydown=function(e){if(e.key==="Enter")window.login(e)};
-saveAll();
+// JANGAN saveAll() di sini: user belum login, jangan kirim data kosong ke server.
+try{localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));}catch(e){}
 
 // Fungsi Sinkron Manual (tombol 🔄 Sync di header)
 window.syncFromServer=function(silent){
