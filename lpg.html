@@ -2737,6 +2737,7 @@ lokasi=function(selected){
 /* Expose core data/helpers to the final monitoring filter patch. */
 window.data=data;
 window.locations=locations;
+window.settings=settings;
 window.sameLokasi=sameLokasi;
 window.normKet=normKet;
 window.ketIsiUlang=ketIsiUlang;
@@ -2744,6 +2745,11 @@ window.ketPenambahanAset=ketPenambahanAset;
 window.parseBiaya=parseBiaya;
 window.esc=esc;
 window.money=money;
+window.tubeFilterArr=tubeFilterArr;
+window.getTubeAdjustment=getTubeAdjustment;
+window.tubeAdjustmentKey=tubeAdjustmentKey;
+window.setTubeAdjustment=setTubeAdjustment;
+window.saveAll=saveAll;
 
 /* End development layer */
 })();
@@ -2877,16 +2883,21 @@ window.printMonitoringPDF=function(){
   }
   function patchStat(l){
     var from=window.monitoringFilter.from||'', to=window.monitoringFilter.to||'';
-    var allK=tubeFilterArr(data.keluar).filter(function(x){return sameLokasi(x.lokasi,l);});
-    var allM=tubeFilterArr(data.kembali).filter(function(x){return sameLokasi(x.lokasi,l);});
+    var fnFilter=typeof window.tubeFilterArr==='function'?window.tubeFilterArr:function(a){return a||[];};
+    var fnAdj=typeof window.getTubeAdjustment==='function'?window.getTubeAdjustment:function(){return 0;};
+    var fnIsi=typeof ketIsiUlang==='function'?ketIsiUlang:(typeof window.ketIsiUlang==='function'?window.ketIsiUlang:function(){return false;});
+    var fnAset=typeof ketPenambahanAset==='function'?ketPenambahanAset:(typeof window.ketPenambahanAset==='function'?window.ketPenambahanAset:function(){return false;});
+    var fnSame=typeof sameLokasi==='function'?sameLokasi:(typeof window.sameLokasi==='function'?window.sameLokasi:function(a,b){return String(a).trim().toLowerCase()===String(b).trim().toLowerCase();});
+    var allK=fnFilter(data.keluar).filter(function(x){return fnSame(x.lokasi,l);});
+    var allM=fnFilter(data.kembali).filter(function(x){return fnSame(x.lokasi,l);});
     var k=(from||to)?allK.filter(patchPeriod):allK;
     var m=(from||to)?allM.filter(patchPeriod):allM;
     var ks=to?allK.filter(function(x){return String(x.tanggal||'').slice(0,10)<=to;}):allK;
     var ms=to?allM.filter(function(x){return String(x.tanggal||'').slice(0,10)<=to;}):allM;
     var qty=function(a){return a.reduce(function(s,x){return s+Number(x.qty||0);},0);};
-    var isi=k.filter(function(x){return ketIsiUlang(x.keterangan);});
-    var aset=k.filter(function(x){return ketPenambahanAset(x.keterangan);});
-    var manual=Number(getTubeAdjustment(l)||0);
+    var isi=k.filter(function(x){return fnIsi(x.keterangan);});
+    var aset=k.filter(function(x){return fnAset(x.keterangan);});
+    var manual=Number(fnAdj(l)||0);
     var asetSnap=ks.filter(function(x){return ketPenambahanAset(x.keterangan);});
     var stokAset=manual+qty(asetSnap);
     var keluarNonAset=ks.filter(function(x){return !ketPenambahanAset(x.keterangan);});
@@ -3107,7 +3118,8 @@ function calc(l){
  var d=window.data||{},K=(d.keluar||[]).filter(function(x){return eq(x.lokasi,l)}),M=(d.kembali||[]).filter(function(x){return eq(x.lokasi,l)});
  var PK=K.filter(period),PM=M.filter(period),SK=MF.to?K.filter(function(x){return key(x.tanggal)<=MF.to}):K,SM=MF.to?M.filter(function(x){return key(x.tanggal)<=MF.to}):M;
  var asetSnap=SK.filter(function(x){return isAset(x.keterangan)}),nonAsetSnap=SK.filter(function(x){return !isAset(x.keterangan)});
- var manual=getTubeAdjustment(l),stokAset=manual+q(asetSnap),stokLokasi=stokAset+q(nonAsetSnap)-q(SM),sel=stokLokasi-stokAset;
+ var fnAdj=typeof window.getTubeAdjustment==='function'?window.getTubeAdjustment:function(){return 0;};
+ var manual=fnAdj(l),stokAset=manual+q(asetSnap),stokLokasi=stokAset+q(nonAsetSnap)-q(SM),sel=stokLokasi-stokAset;
  var isi=PK.filter(function(x){return isIsi(x.keterangan)}),aset=PK.filter(function(x){return isAset(x.keterangan)});
  return {stokAset:stokAset,stokLokasi:stokLokasi,keluar:q(PK),masuk:q(PM),isiUlang:q(isi),aset:q(aset),hutang:Math.max(0,-sel),lebih:Math.max(0,sel),biaya:isi.reduce(function(n,x){return n+Number(x.qty||0)*parseCost(x.biaya)},0),biayaAset:aset.reduce(function(n,x){return n+Number(x.qty||0)*parseCost(x.biaya)},0)}
 }
