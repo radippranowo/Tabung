@@ -363,7 +363,7 @@ function saveAll(){
     localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
     var saved=localStorage.getItem("ktu_lpg_data_v2");
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
-    // Sync ke server (fire and forget, tidak blokir UI)
+    // Sync ke server (fire and forget, tidak blokir UI, tidak ubah logika)
     try{
       fetch("api.php?action=direct_save",{
         method:"POST",
@@ -519,26 +519,8 @@ window.login=function(e){
   var p=document.getElementById("p").value||"";
   if(u==="admin" && p==="admin123"){
     document.getElementById("err").textContent="";
-    // Load data dari server dulu, baru tampil app
-    fetch("api.php?action=direct_load",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({username:"admin"})
-    }).then(function(r){return r.json();}).then(function(res){
-      if(res.ok && res.data){
-        var d=res.data;
-        // Hanya overwrite kalau server punya data (tidak kosong semua)
-        var hasServerData=(d.data && (Array.isArray(d.data.tabung)?d.data.tabung.length:Object.keys(d.data).length)>0);
-        if(hasServerData){
-          data=d.data;
-          if(d.settings && Object.keys(d.settings).length) settings=d.settings;
-          if(d.masterLokasi && d.masterLokasi.length) locations=d.masterLokasi;
-          localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
-          localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
-          localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
-        }
-      }
-    }).catch(function(e){console.warn("[KTU] Load dari server gagal:",e);}).finally(function(){
+    // Ambil data terbaru dari server dulu, baru tampil app (agar device lain sync)
+    function doShow(){
       document.getElementById("login").style.display="none";
       document.getElementById("app").style.display="block";
       try{
@@ -549,6 +531,27 @@ window.login=function(e){
         var c=document.getElementById("content");
         if(c)c.innerHTML='<div class="panel"><h3>Dashboard</h3><p class="muted">Login berhasil. Dashboard sedang dimuat ulang.</p></div>';
       }
+    }
+    fetch("api.php?action=direct_load",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:"admin"})
+    }).then(function(r){return r.json();}).then(function(res){
+      if(res.ok && res.data){
+        var d=res.data;
+        // Hanya overwrite jika server punya data (tidak kosong)
+        var hasData=d.data && (Array.isArray(d.data.keluar)?d.data.keluar.length+((d.data.kembali||[]).length):0)>0;
+        if(hasData){
+          data=d.data;
+          if(d.settings && Object.keys(d.settings).length) settings=d.settings;
+          if(Array.isArray(d.masterLokasi) && d.masterLokasi.length) locations=d.masterLokasi;
+          localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
+          localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
+          localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
+        }
+      }
+    }).catch(function(e){console.warn("[KTU] Load server gagal:",e);}).finally(function(){
+      doShow();
     });
   } else {
     document.getElementById("err").textContent="Username atau password salah.";
@@ -624,7 +627,6 @@ function setTubeAdjustment(obj,l,v){obj[tubeAdjustmentKey(l)]=Number(v||0);}
 function selectTubeType(type){
   if(tubeTypes.indexOf(type)<0) type="LPG 12 Kg";
   activeTubeType=type;
-  window.activeTubeType=type;
   localStorage.setItem("KTU_ACTIVE_TUBE_TYPE",type);
   var sub=document.getElementById("brandSubtitle");
   if(sub) sub.textContent="Logistik "+type;
@@ -1035,11 +1037,10 @@ function dashboard(){
   }).join('');
   var totalRow='<tr style="font-weight:700;background:#eee"><td>TOTAL</td><td>'+locations.reduce(function(a,l){return a+Number(dashboardLocStatMonthly(l,bounds.start,bounds.end).stokAset||0)},0)+'</td><td>'+locations.reduce(function(a,l){return a+Number(dashboardLocStatMonthly(l,bounds.start,bounds.end).stokLokasi||0)},0)+'</td><td>'+totalK+'</td><td>'+totalM+'</td><td>'+locations.reduce(function(a,l){return a+Number(dashboardLocStatMonthly(l,bounds.start,bounds.end).isiUlang||0)},0)+'</td><td>'+totalH+'</td><td>'+totalLebih+'</td><td>'+totalAset+'</td><td>-</td><td>-</td><td>-</td></tr>';
   var icon=function(type){var paths={out:'<path d="M4 12h12"/><path d="m11 7 5 5-5 5"/><path d="M20 5v14H4"/>',in:'<path d="M20 12H8"/><path d="m13 7-5 5 5 5"/><path d="M4 5v14h16"/>',debt:'<circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/>',more:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/>',asset:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8v8H8z"/>',plus:'<path d="M12 5v14"/><path d="M5 12h14"/>'};return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(paths[type]||paths.plus)+'</svg>';};
-  var tubeLabel=activeTubeType||'LPG 12 Kg';
   document.getElementById('content').innerHTML='<div class="dashboard-v10">'+
-    '<div class="hero"><div class="hero-main"><div class="hero-logo">'+icon('asset')+'</div><div><h2>Dashboard — '+esc(tubeLabel)+'</h2><p>Ringkasan otomatis berdasarkan <b>'+dashboardMonthLabel(selected)+'</b>. Data bulan sebelumnya tetap tersimpan.</p></div></div><div class="hero-side"><span>Total Lokasi</span><b>'+locations.length+'</b></div></div>'+
+    '<div class="hero"><div class="hero-main"><div class="hero-logo">'+icon('asset')+'</div><div><h2>Dashboard Gudang Logistik</h2><p>Ringkasan otomatis berdasarkan <b>'+dashboardMonthLabel(selected)+'</b>. Data bulan sebelumnya tetap tersimpan.</p></div></div><div class="hero-side"><span>Total Lokasi</span><b>'+locations.length+'</b></div></div>'+
     '<div class="dashboard-period"><div><div class="period-label">Periode Dashboard</div><div class="period-value">'+dashboardMonthLabel(selected)+'</div></div><div class="period-actions"><button type="button" onclick="dashboardPrevMonth()">‹</button><button type="button" class="primary-period" onclick="dashboardCurrentMonth()">Bulan Ini</button><button type="button" onclick="dashboardNextMonth()">›</button></div></div>'+
-    '<div class="dash-section-title"><div><h3>Ringkasan '+esc(tubeLabel)+' — '+dashboardMonthLabel(selected)+'</h3><p>Pilih kartu untuk langsung membuka data terkait.</p></div></div>'+
+    '<div class="dash-section-title"><div><h3>Ringkasan '+dashboardMonthLabel(selected)+'</h3><p>Pilih kartu untuk langsung membuka data terkait.</p></div></div>'+
     '<div class="dash-cards"><div class="dash-card out" onclick="show(\'keluar\')"><div class="dash-icon">'+icon('out')+'</div><div class="dash-label">Tabung Keluar</div><div class="dash-value">'+totalK+'</div><div class="dash-mini">Transaksi bulan terpilih</div></div><div class="dash-card in" onclick="show(\'kembali\')"><div class="dash-icon">'+icon('in')+'</div><div class="dash-label">Tabung Masuk</div><div class="dash-value">'+totalM+'</div><div class="dash-mini">Transaksi bulan terpilih</div></div><div class="dash-card debt" onclick="show(\'lokasi\')"><div class="dash-icon">'+icon('debt')+'</div><div class="dash-label">Hutang ke Lokasi</div><div class="dash-value">'+totalH+'</div><div class="dash-mini">Posisi akhir bulan</div></div><div class="dash-card more" onclick="show(\'lokasi\')"><div class="dash-icon">'+icon('more')+'</div><div class="dash-label">Lebih Tabung di Lokasi</div><div class="dash-value">'+totalLebih+'</div><div class="dash-mini">Posisi akhir bulan</div></div><div class="dash-card asset" onclick="show(\'lokasi\')"><div class="dash-icon">'+icon('asset')+'</div><div class="dash-label">Penambahan Aset</div><div class="dash-value">'+totalAset+'</div><div class="dash-mini">Penambahan pada bulan ini</div></div></div>'+
     '<div class="quick-actions"><button class="quick-action" type="button" onclick="show(\'keluar\')"><div class="qa-icon">'+icon('out')+'</div><div><b>Catat Tabung Keluar</b><span>Kirim tabung isi ke lokasi</span></div></button><button class="quick-action" type="button" onclick="show(\'kembali\')"><div class="qa-icon">'+icon('in')+'</div><div><b>Catat Tabung Masuk</b><span>Terima tabung kosong dari lokasi</span></div></button></div>'+
     dashboardTransactionChartHTML(selected)+dashboardStockCompareChartHTML(selected)+
