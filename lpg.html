@@ -542,26 +542,31 @@ window.login=function(e){
     }).then(function(r){return r.json();}).then(function(res){
       if(res.ok && res.data){
         var d=res.data;
-        var serverUpdatedAt=d.updated_at?new Date(d.updated_at).getTime():0;
+        // Parse server timestamp - ganti spasi jadi T agar valid di semua browser (termasuk Safari/iOS)
+        var rawTs=String(d.updated_at||'').replace(' ','T');
+        var serverUpdatedAt=rawTs?new Date(rawTs).getTime():0;
+        if(isNaN(serverUpdatedAt))serverUpdatedAt=0;
         var localLastSave=Number(localStorage.getItem("ktu_lpg_last_save_v1")||0);
-        // Pakai server kalau server lebih baru, atau localStorage tidak ada data
-        var serverHasData=d.data && (
+        var serverHasData=!!(d.data && typeof d.data==='object' && (
           (Array.isArray(d.data.kembali)&&d.data.kembali.length>0)||
           (Array.isArray(d.data.keluar)&&d.data.keluar.length>0)||
           (Array.isArray(d.data.tabung)&&d.data.tabung.length>0)||
-          (Array.isArray(d.data.refill)&&d.data.refill.length>0)
-        );
-        var localHasData=(
+          (Array.isArray(d.data.refill)&&d.data.refill.length>0)||
+          (Array.isArray(d.data.aset)&&d.data.aset.length>0)||
+          (Array.isArray(d.data.opname)&&d.data.opname.length>0)
+        ));
+        var localHasData=!!((
           (Array.isArray(data.kembali)&&data.kembali.length>0)||
           (Array.isArray(data.keluar)&&data.keluar.length>0)||
           (Array.isArray(data.tabung)&&data.tabung.length>0)||
-          (Array.isArray(data.refill)&&data.refill.length>0)
-        );
-        // Pakai server kalau: server ada data DAN (lokal tidak ada data ATAU server lebih baru dari last save lokal)
-        var useServer = serverHasData && (!localHasData || serverUpdatedAt > localLastSave);
-        // Pakai lokal kalau lokal lebih baru, push ke server
-        if(localHasData && localLastSave > serverUpdatedAt){
-          // localStorage lebih baru — push ke server
+          (Array.isArray(data.refill)&&data.refill.length>0)||
+          (Array.isArray(data.aset)&&data.aset.length>0)||
+          (Array.isArray(data.opname)&&data.opname.length>0)
+        ));
+        // Pakai server jika: lokal kosong, ATAU server lebih baru dari last save lokal
+        var useServer = serverHasData && (!localHasData || serverUpdatedAt >= localLastSave);
+        // Lokal lebih baru (baru hapus/edit sebelum refresh) — push lokal ke server
+        if(localHasData && localLastSave > serverUpdatedAt && localLastSave > 0){
           fetch("api.php?action=direct_save",{
             method:"POST",
             headers:{"Content-Type":"application/json"},
@@ -571,11 +576,10 @@ window.login=function(e){
           useServer=false;
         }
         if(useServer){
-          if(d.data && typeof d.data==='object') { data=d.data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }
+          if(d.data && typeof d.data==='object') { data=d.data; window.data=data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }
           if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)) settings=d.settings;
           var svLocs=d.masterLokasi||d.locations;
-          if(Array.isArray(svLocs) && svLocs.length) locations=svLocs.slice();
-          // Update localStorage agar offline juga sinkron
+          if(Array.isArray(svLocs) && svLocs.length) { locations=svLocs.slice(); window.locations=locations; }
           localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
           localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
           localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
@@ -3796,7 +3800,6 @@ setInterval(force,500);
     if(d){
       ["tabung","keluar","kembali","refill","aset","opname","hutang","stokHarian"].forEach(function(k){ if(!Array.isArray(d[k])) d[k]=[]; });
       if(!d.stokAsetAdjustment || typeof d.stokAsetAdjustment!=="object") d.stokAsetAdjustment={};
-      window.saveAll();
     }
   }catch(e){ console.error("KTU persistence init error",e); }
 })();

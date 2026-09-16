@@ -68,11 +68,12 @@ try {
             if (!empty($locs)) {
                 $store['users'][$username]['master_lokasi_json'] = $locs;
             }
-            $store['users'][$username]['updated_at'] = date('Y-m-d H:i:s');
+            $isoNow = gmdate('Y-m-d\TH:i:s\Z');
+            $store['users'][$username]['updated_at'] = $isoNow;
             
             if (saveJSON($jsonFile, $store)) {
                 $response['ok'] = true;
-                $response['saved_at'] = date('Y-m-d H:i:s');
+                $response['saved_at'] = $isoNow;
             } else {
                 throw new Exception('Failed to save JSON file');
             }
