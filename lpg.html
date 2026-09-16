@@ -45,7 +45,10 @@ main{margin-left:255px;min-height:100vh}
 header{height:72px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 22px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;box-shadow:0 2px 12px #1018280a}
 #menuBtn{display:none;background:#111827;color:#fff;font-size:20px;padding:9px 12px}
 #pageTitle{font-size:23px}.head-sub{font-size:12px;color:var(--muted);margin-left:2px}
-.logout{margin-left:auto;background:#f1f3f6;color:#1f2937}
+.header-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.sync-btn{background:#2563eb;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.15s}
+.sync-btn:hover{background:#1d4ed8}
+.logout{background:#f1f3f6;color:#1f2937}
 .content{padding:22px;max-width:1500px;margin:auto}
 .hero{background:linear-gradient(135deg,#5d0010,#b80018 60%,#e10020);color:#fff;border-radius:20px;padding:24px;display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:17px;box-shadow:0 12px 28px #b8001826}
 .hero h2{margin:0 0 6px;font-size:26px}.hero p{margin:0;color:#ffe7eb}.hero-badge{background:#fff2;border:1px solid #fff4;border-radius:14px;padding:12px 16px;text-align:center;min-width:130px}.hero-badge b{font-size:24px}
@@ -343,7 +346,7 @@ header{height:72px;background:#fff;display:flex;align-items:center;gap:14px;padd
 <div class="nav" id="nav"></div>
 </aside>
 <main>
-<header><button aria-label="Menu" id="menuBtn">☰</button><div><b id="pageTitle">Dashboard</b><div class="head-sub">Gudang &amp; Tabung LPG 12 Kg</div></div><button class="logout" id="logout">Keluar</button></header>
+<header><button aria-label="Menu" id="menuBtn">☰</button><div><b id="pageTitle">Dashboard</b><div class="head-sub">Gudang &amp; Tabung LPG 12 Kg</div></div><div class="header-actions"><button type="button" class="sync-btn" id="syncBtn" onclick="window.syncFromServer(true)" title="Sinkron data dari server">🔄 Sync</button><button class="logout" id="logout">Keluar</button></div></header>
 <div class="content" id="content"></div>
 </main>
 </section>
@@ -529,7 +532,7 @@ window.login=function(e){
   var u=(document.getElementById("u").value||"").trim();
   var p=document.getElementById("p").value||"";
   if(u==="admin" && p==="admin123"){
-    document.getElementById("err").textContent="Memuat data...";
+    document.getElementById("err").textContent="Memuat data dari server...";
     document.getElementById("go").disabled=true;
     function doShowApp(){
       document.getElementById("err").textContent="";
@@ -545,62 +548,11 @@ window.login=function(e){
         if(c)c.innerHTML='<div class="panel"><h3>Dashboard</h3><p class="muted">Login berhasil. Dashboard sedang dimuat ulang.</p></div>';
       }
     }
-    // Tarik data dari server, bandingkan timestamp dengan localStorage
-    fetch("api.php?action=direct_load",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({username:"admin"})
-    }).then(function(r){return r.json();}).then(function(res){
-      if(res.ok && res.data){
-        var d=res.data;
-        // Parse server timestamp - ganti spasi jadi T agar valid di semua browser (termasuk Safari/iOS)
-        var rawTs=String(d.updated_at||'').replace(' ','T');
-        var serverUpdatedAt=rawTs?new Date(rawTs).getTime():0;
-        if(isNaN(serverUpdatedAt))serverUpdatedAt=0;
-        var localLastSave=Number(localStorage.getItem("ktu_lpg_last_save_v1")||0);
-        var serverHasData=!!(d.data && typeof d.data==='object' && (
-          (Array.isArray(d.data.kembali)&&d.data.kembali.length>0)||
-          (Array.isArray(d.data.keluar)&&d.data.keluar.length>0)||
-          (Array.isArray(d.data.tabung)&&d.data.tabung.length>0)||
-          (Array.isArray(d.data.refill)&&d.data.refill.length>0)||
-          (Array.isArray(d.data.aset)&&d.data.aset.length>0)||
-          (Array.isArray(d.data.opname)&&d.data.opname.length>0)
-        ));
-        var localHasData=!!((
-          (Array.isArray(data.kembali)&&data.kembali.length>0)||
-          (Array.isArray(data.keluar)&&data.keluar.length>0)||
-          (Array.isArray(data.tabung)&&data.tabung.length>0)||
-          (Array.isArray(data.refill)&&data.refill.length>0)||
-          (Array.isArray(data.aset)&&data.aset.length>0)||
-          (Array.isArray(data.opname)&&data.opname.length>0)
-        ));
-        var isBrandNewDevice = (localLastSave === 0);
-        var useServer = isBrandNewDevice || (serverUpdatedAt > localLastSave);
-
-        // Jika lokal lebih baru daripada server, sinkronkan lokal ke server
-        if(!useServer && localLastSave > serverUpdatedAt && localLastSave > 0){
-          fetch("api.php?action=direct_save",{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
-            keepalive:true
-          }).catch(function(){});
-        }
-        if(useServer){
-          if(d.data && typeof d.data==='object') { data=d.data; window.data=data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }
-          if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)) { settings=d.settings; window.settings=settings; }
-          var svLocs=d.masterLokasi||d.locations;
-          if(Array.isArray(svLocs) && svLocs.length) { locations=svLocs.slice(); window.locations=locations; }
-          localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
-          localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
-          localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
-          if(serverUpdatedAt) localStorage.setItem("ktu_lpg_last_save_v1",String(serverUpdatedAt));
-        }
-      }
+    // Server adalah Single Source of Truth: load data terbaru dari server
+    window.syncFromServer(false).then(function(){
       window.__ktuLoggedIn = true;
       doShowApp();
-    }).catch(function(err){
-      console.warn("Direct load dari server gagal, pakai data lokal:", err);
+    }).catch(function(){
       window.__ktuLoggedIn = true;
       doShowApp();
     });
@@ -608,6 +560,55 @@ window.login=function(e){
     document.getElementById("err").textContent="Username atau password salah.";
   }
 }
+window.syncFromServer=function(showNotice){
+  var btn=document.getElementById("syncBtn");
+  if(btn) btn.textContent="⏳ Sync...";
+  return fetch("api.php?action=direct_load",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username:"admin"})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(btn) btn.textContent="🔄 Sync";
+    if(res && res.ok && res.data){
+      var d=res.data;
+      if(d.data && typeof d.data==='object'){
+        data=d.data;
+        window.data=data;
+        if(!Array.isArray(data.stokHarian)) data.stokHarian=[];
+      }
+      if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)){
+        settings=d.settings;
+        window.settings=settings;
+      }
+      var svLocs=d.masterLokasi||d.locations;
+      if(Array.isArray(svLocs) && svLocs.length){
+        locations=svLocs.slice();
+        window.locations=locations;
+      }
+      localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
+      localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
+      localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
+      if(d.updated_at){
+        var rawTs=String(d.updated_at).replace(' ','T');
+        var sTs=new Date(rawTs).getTime();
+        if(!isNaN(sTs)) localStorage.setItem("ktu_lpg_last_save_v1",String(sTs));
+      }
+      if(typeof show==="function") show(window.activePage||"dashboard");
+      if(showNotice) alert("Data berhasil disinkronkan dari server!");
+    }
+    return res;
+  }).catch(function(err){
+    if(btn) btn.textContent="🔄 Sync";
+    console.warn("Direct load gagal:",err);
+    if(showNotice) alert("Gagal mengambil data dari server. Periksa koneksi internet.");
+    throw err;
+  });
+};
+window.addEventListener("focus",function(){
+  if(window.__ktuLoggedIn){
+    window.syncFromServer(false).catch(function(){});
+  }
+});
 document.getElementById("go").onclick=function(e){window.login(e);};
 document.getElementById("loginForm").onsubmit=function(e){window.login(e);};
 document.getElementById("p").onkeydown=function(e){if(e.key==="Enter")window.login(e)};
