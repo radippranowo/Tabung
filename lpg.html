@@ -343,7 +343,7 @@ header{height:72px;background:#fff;display:flex;align-items:center;gap:14px;padd
 <div class="nav" id="nav"></div>
 </aside>
 <main>
-<header><button aria-label="Menu" id="menuBtn">☰</button><div><b id="pageTitle">Dashboard</b><div class="head-sub">Gudang &amp; Tabung LPG 12 Kg</div></div><button class="logout" id="logout">Keluar</button></header>
+<header><button aria-label="Menu" id="menuBtn">☰</button><div><b id="pageTitle">Dashboard</b><div class="head-sub">Gudang &amp; Tabung LPG 12 Kg</div></div><div style="display:flex;gap:6px;margin-left:auto"><button type="button" id="syncBtn" style="background:#0284c7;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer">🔄 Sync</button><button class="logout" id="logout">Keluar</button></div></header>
 <div class="content" id="content"></div>
 </main>
 </section>
@@ -577,9 +577,19 @@ window.login=function(e){
           (Array.isArray(d.masterLokasi) && d.masterLokasi.length>0)
         );
         if(hasData){
+          if(sData && (!sData.stokAsetAdjustment || Array.isArray(sData.stokAsetAdjustment))){
+            sData.stokAsetAdjustment={};
+          }
+          if(sData && !Array.isArray(sData.stokHarian)){
+            sData.stokHarian=[];
+          }
           data=sData;
           if(d.settings && Object.keys(d.settings).length) settings=d.settings;
           if(Array.isArray(d.masterLokasi) && d.masterLokasi.length) locations=d.masterLokasi;
+          // Sinkronkan pointer global window agar plugin/komponen lain melihat data terbaru
+          window.data=data;
+          window.locations=locations;
+          window.settings=settings;
           localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
           localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
           localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
@@ -596,6 +606,62 @@ document.getElementById("go").onclick=function(e){window.login(e);};
 document.getElementById("loginForm").onsubmit=function(e){window.login(e);};
 document.getElementById("p").onkeydown=function(e){if(e.key==="Enter")window.login(e)};
 saveAll();
+
+// Fungsi Sinkron Manual (tombol 🔄 Sync di header)
+window.syncFromServer=function(silent){
+  var btn=document.getElementById("syncBtn");
+  if(btn) btn.textContent="⏳ Sync...";
+  fetch("api.php?action=direct_load",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username:"admin"})
+  }).then(function(r){return r.json();}).then(function(res){
+    if(res.ok && res.data){
+      var d=res.data;
+      var sData=d.data;
+      var hasData=sData && (
+        (Array.isArray(sData.keluar) && sData.keluar.length>0) ||
+        (Array.isArray(sData.kembali) && sData.kembali.length>0) ||
+        (Array.isArray(sData.tabung) && sData.tabung.length>0) ||
+        (Array.isArray(sData.refill) && sData.refill.length>0) ||
+        (Array.isArray(sData.aset) && sData.aset.length>0) ||
+        (Array.isArray(sData.opname) && sData.opname.length>0) ||
+        (Array.isArray(sData.hutang) && sData.hutang.length>0) ||
+        (sData.stokAsetAdjustment && Object.keys(sData.stokAsetAdjustment).length>0) ||
+        (Array.isArray(d.masterLokasi) && d.masterLokasi.length>0)
+      );
+      if(hasData){
+        if(sData && (!sData.stokAsetAdjustment || Array.isArray(sData.stokAsetAdjustment))){
+          sData.stokAsetAdjustment={};
+        }
+        if(sData && !Array.isArray(sData.stokHarian)){
+          sData.stokHarian=[];
+        }
+        data=sData;
+        if(d.settings && Object.keys(d.settings).length) settings=d.settings;
+        if(Array.isArray(d.masterLokasi) && d.masterLokasi.length) locations=d.masterLokasi;
+        window.data=data;
+        window.locations=locations;
+        window.settings=settings;
+        localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
+        localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
+        localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
+        if(!silent) alert("Sinkronisasi berhasil! Data terbaru sudah dimuat.");
+        if(typeof show==="function") show(window.currentPage||"dashboard");
+      }else{
+        if(!silent) alert("Server belum memiliki data.");
+      }
+    }
+  }).catch(function(e){
+    console.warn("[KTU] syncFromServer error:",e);
+    if(!silent) alert("Gagal menghubungi server: "+(e.message||e));
+  }).finally(function(){
+    if(btn) btn.textContent="🔄 Sync";
+  });
+};
+var _sBtn=document.getElementById("syncBtn");
+if(_sBtn) _sBtn.onclick=function(){window.syncFromServer(false);};
+
 document.getElementById("logout").onclick=function(){document.getElementById("app").style.display="none";document.getElementById("login").style.display="flex"};
 document.getElementById("menuBtn").onclick=function(){document.getElementById("sidebar").classList.toggle("open");document.getElementById("overlay").classList.toggle("show")};
 document.getElementById("overlay").onclick=function(){document.getElementById("sidebar").classList.remove("open");document.getElementById("overlay").classList.remove("show")};
