@@ -353,6 +353,7 @@ var locations=["Site Air Upas","Kelampai","Kebanteng/Hampul","Repin","SJYE","PT 
 var savedMasterLokasi=JSON.parse(localStorage.getItem("ktu_lpg_master_lokasi_v1")||"null");
 if(Array.isArray(savedMasterLokasi) && savedMasterLokasi.length) locations=savedMasterLokasi.slice();
 function saveMasterLokasi(){localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));}
+window.__ktuLoggedIn = false;
 var data=JSON.parse(localStorage.getItem("ktu_lpg_data_v2")||"null")||{tabung:[],keluar:[],kembali:[],refill:[],aset:[],opname:[],hutang:[],stokAsetAdjustment:{},stokHarian:[]};
 if(!Array.isArray(data.stokHarian)) data.stokHarian=[];
 var settings=JSON.parse(localStorage.getItem("ktu_lpg_settings_v2")||"null")||{tarifRefill:0,tarifAset:0};
@@ -364,15 +365,17 @@ function saveAll(){
     localStorage.setItem("ktu_lpg_last_save_v1",String(Date.now()));
     var saved=localStorage.getItem("ktu_lpg_data_v2");
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
-    // Sync ke server dengan keepalive
-    try{
-      fetch("api.php?action=direct_save",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
-        keepalive:true
-      }).catch(function(){});
-    }catch(_){}
+    // Sync ke server hanya jika pengguna sudah login
+    if(window.__ktuLoggedIn){
+      try{
+        fetch("api.php?action=direct_save",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
+          keepalive:true
+        }).catch(function(){});
+      }catch(_){}
+    }
     return true;
   }catch(err){
     console.error("KTU saveAll gagal:",err);
@@ -563,8 +566,8 @@ window.login=function(e){
           (Array.isArray(data.aset)&&data.aset.length>0)||
           (Array.isArray(data.opname)&&data.opname.length>0)
         ));
-        // Pakai server jika: lokal kosong, ATAU server lebih baru dari last save lokal
-        var useServer = serverHasData && (!localHasData || serverUpdatedAt >= localLastSave);
+        // Pakai server jika: data lokal kosong, ATAU data server lebih baru dari last save lokal
+        var useServer = (!localHasData && d.data && typeof d.data === 'object') || (serverHasData && serverUpdatedAt >= localLastSave);
         // Lokal lebih baru (baru hapus/edit sebelum refresh) — push lokal ke server
         if(localHasData && localLastSave > serverUpdatedAt && localLastSave > 0){
           fetch("api.php?action=direct_save",{
@@ -577,7 +580,7 @@ window.login=function(e){
         }
         if(useServer){
           if(d.data && typeof d.data==='object') { data=d.data; window.data=data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }
-          if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)) settings=d.settings;
+          if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)) { settings=d.settings; window.settings=settings; }
           var svLocs=d.masterLokasi||d.locations;
           if(Array.isArray(svLocs) && svLocs.length) { locations=svLocs.slice(); window.locations=locations; }
           localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
@@ -586,9 +589,11 @@ window.login=function(e){
           if(serverUpdatedAt) localStorage.setItem("ktu_lpg_last_save_v1",String(serverUpdatedAt));
         }
       }
+      window.__ktuLoggedIn = true;
       doShowApp();
-    }).catch(function(){
-      // Server tidak bisa diakses, lanjut dengan data lokal
+    }).catch(function(err){
+      console.warn("Direct load dari server gagal, pakai data lokal:", err);
+      window.__ktuLoggedIn = true;
       doShowApp();
     });
   } else {
@@ -3786,7 +3791,7 @@ setInterval(force,500);
 
   function persist(){
     try{
-      if(window.data && window.saveAll) window.saveAll();
+      if(window.__ktuLoggedIn && window.data && window.saveAll) window.saveAll();
     }catch(e){ console.error("Persistence final error",e); }
   }
 
@@ -4224,13 +4229,16 @@ window.openMonitoringDetail=function(){
      Hanya transaksi lama tanpa tubeType yang dianggap 12 Kg. */
   function migrate(){
     if(!window.data)return;
+    var changed = false;
     ['keluar','kembali'].forEach(function(k){
       (window.data[k]||[]).forEach(function(x){
-        if(x && !x.tubeType) x.tubeType='LPG 12 Kg';
+        if(x && !x.tubeType) { x.tubeType='LPG 12 Kg'; changed = true; }
       });
     });
-    if(typeof window.saveAllDev==='function') window.saveAllDev();
-    else if(typeof window.saveAll==='function') window.saveAll();
+    if(changed && window.__ktuLoggedIn){
+      if(typeof window.saveAllDev==='function') window.saveAllDev();
+      else if(typeof window.saveAll==='function') window.saveAll();
+    }
   }
 
   migrate();
