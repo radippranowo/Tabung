@@ -363,6 +363,16 @@ function saveAll(){
     localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
     var saved=localStorage.getItem("ktu_lpg_data_v2");
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
+    // Sync ke server (fire and forget, tidak blokir UI)
+    try{
+      fetch("api.php?action=direct_save",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({username:"admin",data:data,settings:settings,masterLokasi:locations||[]})
+      }).then(function(r){return r.json();}).then(function(res){
+        if(!res.ok) console.warn("[KTU] Server sync gagal:",res.msg);
+      }).catch(function(e){console.warn("[KTU] Server sync error:",e);});
+    }catch(e){console.warn("[KTU] Server sync error:",e);}
     return true;
   }catch(err){
     console.error("KTU saveAll gagal:",err);
@@ -509,16 +519,37 @@ window.login=function(e){
   var p=document.getElementById("p").value||"";
   if(u==="admin" && p==="admin123"){
     document.getElementById("err").textContent="";
-    document.getElementById("login").style.display="none";
-    document.getElementById("app").style.display="block";
-    try{
-      if(typeof buildNav==="function") buildNav();
-      if(typeof show==="function") show("dashboard");
-    }catch(err){
-      console.error("Dashboard gagal dimuat setelah login:",err);
-      var c=document.getElementById("content");
-      if(c)c.innerHTML='<div class="panel"><h3>Dashboard</h3><p class="muted">Login berhasil. Dashboard sedang dimuat ulang.</p></div>';
-    }
+    // Load data dari server dulu, baru tampil app
+    fetch("api.php?action=direct_load",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username:"admin"})
+    }).then(function(r){return r.json();}).then(function(res){
+      if(res.ok && res.data){
+        var d=res.data;
+        // Hanya overwrite kalau server punya data (tidak kosong semua)
+        var hasServerData=(d.data && (Array.isArray(d.data.tabung)?d.data.tabung.length:Object.keys(d.data).length)>0);
+        if(hasServerData){
+          data=d.data;
+          if(d.settings && Object.keys(d.settings).length) settings=d.settings;
+          if(d.masterLokasi && d.masterLokasi.length) locations=d.masterLokasi;
+          localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
+          localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
+          localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
+        }
+      }
+    }).catch(function(e){console.warn("[KTU] Load dari server gagal:",e);}).finally(function(){
+      document.getElementById("login").style.display="none";
+      document.getElementById("app").style.display="block";
+      try{
+        if(typeof buildNav==="function") buildNav();
+        if(typeof show==="function") show("dashboard");
+      }catch(err){
+        console.error("Dashboard gagal dimuat setelah login:",err);
+        var c=document.getElementById("content");
+        if(c)c.innerHTML='<div class="panel"><h3>Dashboard</h3><p class="muted">Login berhasil. Dashboard sedang dimuat ulang.</p></div>';
+      }
+    });
   } else {
     document.getElementById("err").textContent="Username atau password salah.";
   }
