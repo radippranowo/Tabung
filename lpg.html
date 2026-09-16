@@ -361,14 +361,16 @@ function saveAll(){
   try{
     localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
     localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
+    localStorage.setItem("ktu_lpg_last_save_v1",String(Date.now()));
     var saved=localStorage.getItem("ktu_lpg_data_v2");
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
-    // Sync ke server (background, tidak blokir UI)
+    // Sync ke server dengan keepalive
     try{
       fetch("api.php?action=direct_save",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations})
+        body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
+        keepalive:true
       }).catch(function(){});
     }catch(_){}
     return true;
@@ -532,7 +534,7 @@ window.login=function(e){
         if(c)c.innerHTML='<div class="panel"><h3>Dashboard</h3><p class="muted">Login berhasil. Dashboard sedang dimuat ulang.</p></div>';
       }
     }
-    // Tarik data dari server dulu, jika gagal pakai localStorage
+    // Tarik data dari server, bandingkan timestamp dengan localStorage
     fetch("api.php?action=direct_load",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -540,14 +542,45 @@ window.login=function(e){
     }).then(function(r){return r.json();}).then(function(res){
       if(res.ok && res.data){
         var d=res.data;
-        if(d.data && typeof d.data==='object') { data=d.data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }
-        if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)) settings=d.settings;
-        var svLocs=d.locations||d.masterLokasi;
-        if(Array.isArray(svLocs) && svLocs.length) locations=svLocs.slice();
-        // Update localStorage agar offline juga sinkron
-        localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
-        localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
-        localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
+        var serverUpdatedAt=d.updated_at?new Date(d.updated_at).getTime():0;
+        var localLastSave=Number(localStorage.getItem("ktu_lpg_last_save_v1")||0);
+        // Pakai server kalau server lebih baru, atau localStorage tidak ada data
+        var serverHasData=d.data && (
+          (Array.isArray(d.data.kembali)&&d.data.kembali.length>0)||
+          (Array.isArray(d.data.keluar)&&d.data.keluar.length>0)||
+          (Array.isArray(d.data.tabung)&&d.data.tabung.length>0)||
+          (Array.isArray(d.data.refill)&&d.data.refill.length>0)
+        );
+        var localHasData=(
+          (Array.isArray(data.kembali)&&data.kembali.length>0)||
+          (Array.isArray(data.keluar)&&data.keluar.length>0)||
+          (Array.isArray(data.tabung)&&data.tabung.length>0)||
+          (Array.isArray(data.refill)&&data.refill.length>0)
+        );
+        // Pakai server kalau: server ada data DAN (lokal tidak ada data ATAU server lebih baru dari last save lokal)
+        var useServer = serverHasData && (!localHasData || serverUpdatedAt > localLastSave);
+        // Pakai lokal kalau lokal lebih baru, push ke server
+        if(localHasData && localLastSave > serverUpdatedAt){
+          // localStorage lebih baru — push ke server
+          fetch("api.php?action=direct_save",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
+            keepalive:true
+          }).catch(function(){});
+          useServer=false;
+        }
+        if(useServer){
+          if(d.data && typeof d.data==='object') { data=d.data; if(!Array.isArray(data.stokHarian))data.stokHarian=[]; }
+          if(d.settings && typeof d.settings==='object' && !Array.isArray(d.settings)) settings=d.settings;
+          var svLocs=d.masterLokasi||d.locations;
+          if(Array.isArray(svLocs) && svLocs.length) locations=svLocs.slice();
+          // Update localStorage agar offline juga sinkron
+          localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
+          localStorage.setItem("ktu_lpg_settings_v2",JSON.stringify(settings));
+          localStorage.setItem("ktu_lpg_master_lokasi_v1",JSON.stringify(locations));
+          if(serverUpdatedAt) localStorage.setItem("ktu_lpg_last_save_v1",String(serverUpdatedAt));
+        }
       }
       doShowApp();
     }).catch(function(){

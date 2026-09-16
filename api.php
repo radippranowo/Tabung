@@ -175,14 +175,16 @@ try {
                 $response['data'] = [
                     'data' => $userData['data_json'] ?? [],
                     'settings' => $userData['settings_json'] ?? [],
-                    'masterLokasi' => $userData['master_lokasi_json'] ?? []
+                    'masterLokasi' => $userData['master_lokasi_json'] ?? [],
+                    'updated_at' => $userData['updated_at'] ?? null
                 ];
             } else {
                 $response['ok'] = true;
                 $response['data'] = [
                     'data' => [],
                     'settings' => [],
-                    'masterLokasi' => []
+                    'masterLokasi' => [],
+                    'updated_at' => null
                 ];
             }
             break;
