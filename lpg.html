@@ -539,10 +539,21 @@ window.login=function(e){
     }).then(function(r){return r.json();}).then(function(res){
       if(res.ok && res.data){
         var d=res.data;
-        // Hanya overwrite jika server punya data (tidak kosong)
-        var hasData=d.data && (Array.isArray(d.data.keluar)?d.data.keluar.length+((d.data.kembali||[]).length):0)>0;
+        // Overwrite jika server punya data apapun
+        var sData=d.data;
+        var hasData=sData && (
+          (Array.isArray(sData.keluar) && sData.keluar.length>0) ||
+          (Array.isArray(sData.kembali) && sData.kembali.length>0) ||
+          (Array.isArray(sData.tabung) && sData.tabung.length>0) ||
+          (Array.isArray(sData.refill) && sData.refill.length>0) ||
+          (Array.isArray(sData.aset) && sData.aset.length>0) ||
+          (Array.isArray(sData.opname) && sData.opname.length>0) ||
+          (Array.isArray(sData.hutang) && sData.hutang.length>0) ||
+          (sData.stokAsetAdjustment && Object.keys(sData.stokAsetAdjustment).length>0) ||
+          (Array.isArray(d.masterLokasi) && d.masterLokasi.length>0)
+        );
         if(hasData){
-          data=d.data;
+          data=sData;
           if(d.settings && Object.keys(d.settings).length) settings=d.settings;
           if(Array.isArray(d.masterLokasi) && d.masterLokasi.length) locations=d.masterLokasi;
           localStorage.setItem("ktu_lpg_data_v2",JSON.stringify(data));
