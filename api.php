@@ -23,6 +23,12 @@ $dataDir = getenv('RAILWAY_VOLUME_MOUNT_PATH') ?: __DIR__;
 if (!is_dir($dataDir)) mkdir($dataDir, 0755, true);
 $jsonFile = $dataDir . '/data.json';
 
+// Jika volume baru kosong, seed dari data.json bawaan repo
+$seedFile = __DIR__ . '/data.json';
+if (!file_exists($jsonFile) && file_exists($seedFile) && $dataDir !== __DIR__) {
+    copy($seedFile, $jsonFile);
+}
+
 // Helper function: Load JSON data
 function loadJSON($filePath) {
     if (!file_exists($filePath)) {
