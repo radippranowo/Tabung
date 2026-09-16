@@ -360,6 +360,9 @@ window.__ktuLoggedIn = false;
 var data=JSON.parse(localStorage.getItem("ktu_lpg_data_v2")||"null")||{tabung:[],keluar:[],kembali:[],refill:[],aset:[],opname:[],hutang:[],stokAsetAdjustment:{},stokHarian:[]};
 if(!Array.isArray(data.stokHarian)) data.stokHarian=[];
 var settings=JSON.parse(localStorage.getItem("ktu_lpg_settings_v2")||"null")||{tarifRefill:0,tarifAset:0};
+// Flag untuk mencegah race condition antara save dan auto-sync
+window.__isSaving = false;
+
 function saveAll(){
   if(window.data) data=window.data;
   if(window.settings) settings=window.settings;
@@ -373,6 +376,7 @@ function saveAll(){
     if(!saved) throw new Error("Data tidak tersimpan ke localStorage");
     // Sync ke server hanya jika pengguna sudah login
     if(window.__ktuLoggedIn){
+      window.__isSaving = true;
       try{
         fetch("api.php?action=direct_save",{
           method:"POST",
@@ -380,12 +384,17 @@ function saveAll(){
           body:JSON.stringify({username:"admin",data:data,settings:settings,locations:locations}),
           keepalive:true
         }).then(function(r){return r.json();}).then(function(res){
+          window.__isSaving = false;
           if(res && res.saved_at){
             var t = new Date(res.saved_at).getTime();
             if(!isNaN(t) && t > 0) localStorage.setItem("ktu_lpg_last_save_v1", String(t));
           }
-        }).catch(function(){});
-      }catch(_){}
+        }).catch(function(){
+          window.__isSaving = false;
+        });
+      }catch(_){
+        window.__isSaving = false;
+      }
     }
     return true;
   }catch(err){
@@ -561,6 +570,9 @@ window.login=function(e){
   }
 }
 window.syncFromServer=function(showNotice){
+  if(window.__isSaving){
+    return Promise.resolve({ok:true,skipped:true});
+  }
   var btn=document.getElementById("syncBtn");
   if(btn) btn.textContent="⏳ Sync...";
   return fetch("api.php?action=direct_load",{
@@ -593,6 +605,33 @@ window.syncFromServer=function(showNotice){
         var sTs=new Date(rawTs).getTime();
         if(!isNaN(sTs)) localStorage.setItem("ktu_lpg_last_save_v1",String(sTs));
       }
+      // Auto-correct dashboardMonth: jika bulan aktif tidak ada data sama sekali,
+      // pindah ke bulan transaksi terbaru agar kartu Tabung Masuk/Keluar tidak 0.
+      (function(){
+        try{
+          var activeTT=window.activeTubeType||localStorage.getItem('KTU_ACTIVE_TUBE_TYPE')||'LPG 12 Kg';
+          var allTrans=(data.kembali||[]).concat(data.keluar||[]).filter(function(x){
+            return String(x&&x.tubeType||'LPG 12 Kg')===activeTT && x&&x.tanggal;
+          });
+          if(!allTrans.length) return;
+          var bounds=dashboardMonthBounds(dashboardMonth);
+          var hasInMonth=allTrans.some(function(x){
+            var d=String(x.tanggal||'').slice(0,10);
+            return d>=bounds.start && d<=bounds.end;
+          });
+          if(!hasInMonth){
+            // Cari bulan dari transaksi terbaru
+            var latestDate=allTrans.reduce(function(max,x){
+              var d=String(x.tanggal||'').slice(0,7);
+              return d>max?d:max;
+            },'');
+            if(latestDate && validDashboardMonth(latestDate)){
+              dashboardMonth=latestDate;
+              localStorage.setItem('ktu_lpg_dashboard_month_v1',latestDate);
+            }
+          }
+        }catch(e){}
+      })();
       if(typeof show==="function") show(window.activePage||"dashboard");
       if(showNotice) alert("Data berhasil disinkronkan dari server!");
     }
@@ -4103,6 +4142,12 @@ window.openMonitoringDetail=function(){
 
       if(!window.data[type]) window.data[type]=[];
       window.data[type].push(o);
+
+      // Pastikan dashboardMonth sinkron dengan bulan transaksi baru
+      if(o.tanggal && typeof validDashboardMonth==='function' && validDashboardMonth(o.tanggal.slice(0,7))){
+        dashboardMonth = o.tanggal.slice(0,7);
+        try{ localStorage.setItem("ktu_lpg_dashboard_month_v1", dashboardMonth); }catch(e){}
+      }
 
       if(typeof window.saveAllDev==='function') window.saveAllDev();
       else if(typeof window.saveAll==='function') window.saveAll();
