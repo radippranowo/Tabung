@@ -30,7 +30,7 @@ if (!file_exists($jsonFile) && file_exists($seedFile) && $dataDir !== __DIR__) {
 }
 
 // Helper function: Load JSON data
-function loadJSON($filePath) {
+function loadJSON(string $filePath): array {
     if (!file_exists($filePath)) {
         return ['users' => [], 'sessions' => [], 'data' => []];
     }
@@ -38,10 +38,14 @@ function loadJSON($filePath) {
     return $content ? json_decode($content, true) : ['users' => [], 'sessions' => [], 'data' => []];
 }
 
-// Helper function: Save JSON data
-function saveJSON($filePath, $data) {
-    // Use LOCK_EX to prevent concurrent write issues
-    return file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+// Helper function: Save JSON data (atomic write via temp file + rename)
+function saveJSON(string $filePath, array $data): int|false {
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    if ($json === false) return false;
+    $tmp = $filePath . '.tmp.' . getmypid();
+    $written = file_put_contents($tmp, $json, LOCK_EX);
+    if ($written === false) return false;
+    return rename($tmp, $filePath) ? $written : false;
 }
 
 $response = ['ok' => false, 'msg' => ''];

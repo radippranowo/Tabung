@@ -362,6 +362,7 @@ if(!Array.isArray(data.stokHarian)) data.stokHarian=[];
 var settings=JSON.parse(localStorage.getItem("ktu_lpg_settings_v2")||"null")||{tarifRefill:0,tarifAset:0};
 // Flag untuk mencegah race condition antara save dan auto-sync
 window.__isSaving = false;
+window.__lastSaveAt = 0;
 
 function saveAll(){
   if(window.data) data=window.data;
@@ -385,6 +386,7 @@ function saveAll(){
           keepalive:true
         }).then(function(r){return r.json();}).then(function(res){
           window.__isSaving = false;
+          window.__lastSaveAt = Date.now();
           if(res && res.saved_at){
             var t = new Date(res.saved_at).getTime();
             if(!isNaN(t) && t > 0) localStorage.setItem("ktu_lpg_last_save_v1", String(t));
@@ -570,7 +572,8 @@ window.login=function(e){
   }
 }
 window.syncFromServer=function(showNotice){
-  if(window.__isSaving){
+  // Blokir sync jika save baru saja selesai (dalam 4 detik) atau masih berlangsung
+  if(window.__isSaving || (Date.now() - (window.__lastSaveAt||0)) < 4000){
     return Promise.resolve({ok:true,skipped:true});
   }
   var btn=document.getElementById("syncBtn");
