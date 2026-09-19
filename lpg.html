@@ -572,8 +572,7 @@ window.login=function(e){
   }
 }
 window.syncFromServer=function(showNotice){
-  // Blokir sync jika save baru saja selesai (dalam 4 detik) atau masih berlangsung
-  if(window.__isSaving || (Date.now() - (window.__lastSaveAt||0)) < 4000){
+  if(window.__isSaving){
     return Promise.resolve({ok:true,skipped:true});
   }
   var btn=document.getElementById("syncBtn");
@@ -648,7 +647,10 @@ window.syncFromServer=function(showNotice){
 };
 window.addEventListener("focus",function(){
   if(window.__ktuLoggedIn){
-    window.syncFromServer(false).catch(function(){});
+    clearTimeout(window.__focusSyncTimer);
+    window.__focusSyncTimer=setTimeout(function(){
+      if(!window.__isSaving) window.syncFromServer(false).catch(function(){});
+    },2000);
   }
 });
 document.getElementById("go").onclick=function(e){window.login(e);};
