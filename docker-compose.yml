@@ -1,7 +1,7 @@
 services:
   tabung:
     build: .
-    container_name: tabung_app
+    container_name: tabung
     restart: unless-stopped
     ports:
       - "8081:8080"
