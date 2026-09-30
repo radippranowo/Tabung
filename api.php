@@ -38,6 +38,10 @@ function loadJSON(string $filePath): array {
     if (!$content) {
         return ['users' => [], 'sessions' => [], 'data' => []];
     }
+    // Strip UTF-8 BOM if present
+    if (str_starts_with($content, "\xEF\xBB\xBF")) {
+        $content = substr($content, 3);
+    }
     $decoded = json_decode($content, true);
     return is_array($decoded) ? $decoded : ['users' => [], 'sessions' => [], 'data' => []];
 }
