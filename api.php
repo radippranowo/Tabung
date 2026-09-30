@@ -76,6 +76,18 @@ try {
                 $store['users'][$username] = ['created_at' => date('Y-m-d H:i:s')];
             }
 
+            // CEGAH DATA LOSS: Jangan timpa data yang ada jika payload kosong
+            $existingData = $store['users'][$username]['data_json'] ?? [];
+            $incomingCount = count($jsonData['keluar'] ?? []) + count($jsonData['kembali'] ?? []) + count($jsonData['tabung'] ?? []);
+            $existingCount = count($existingData['keluar'] ?? []) + count($existingData['kembali'] ?? []) + count($existingData['tabung'] ?? []);
+            
+            if ($incomingCount === 0 && $existingCount > 0) {
+                // Client mengirim data kosong padahal server punya data; abaikan save untuk cegah data hilang
+                $response['ok'] = true;
+                $response['msg'] = 'Save diabaikan: server memiliki data lebih lengkap';
+                break;
+            }
+
             // Pastikan data_json selalu tersimpan
             $store['users'][$username]['data_json'] = $jsonData;
             if (!empty($settingsData)) {
