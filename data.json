@@ -1,17 +1,295 @@
-{
+﻿{
     "users": {
         "admin": {
-            "created_at": "2026-09-10 04:44:15",
+            "created_at": "2026-09-16 06:05:07",
             "data_json": {
                 "tabung": [],
-                "keluar": [],
+                "keluar": [
+                    {
+                        "tanggal": "2026-09-04",
+                        "lokasi": "Cargil-Repin",
+                        "qty": 2,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-07",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 3,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-11",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 3,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-14",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 2,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-14",
+                        "lokasi": "Hampul/ Kebanteng",
+                        "qty": 4,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-17",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 1,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-09",
+                        "lokasi": "Tanah Merah Tayap",
+                        "qty": 4,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-12",
+                        "lokasi": "Hampul Replanting",
+                        "qty": 12,
+                        "keterangan": "Penambahan Aset",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 818000
+                    },
+                    {
+                        "tanggal": "2026-09-20",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 3,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-04",
+                        "lokasi": "Site Air Upas",
+                        "qty": 2,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "Oxygen",
+                        "biaya": 165000
+                    },
+                    {
+                        "tanggal": "2026-09-04",
+                        "lokasi": "BGA-SJYE",
+                        "qty": 2,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "Oxygen",
+                        "biaya": 165000
+                    },
+                    {
+                        "tanggal": "2026-09-14",
+                        "lokasi": "Site Air Upas",
+                        "qty": 3,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "Oxygen",
+                        "biaya": 165000
+                    },
+                    {
+                        "tanggal": "2026-09-14",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 1,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "Oxygen",
+                        "biaya": 165000
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 3,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "lokasi": "Cargil-Repin",
+                        "qty": 2,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "lokasi": "Kelampai",
+                        "qty": 3,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "LPG 12 Kg",
+                        "biaya": 253000
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 2,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "Oxygen",
+                        "biaya": 165000
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "lokasi": "Hampul/ Kebanteng",
+                        "qty": 1,
+                        "keterangan": "Isi Ulang",
+                        "tubeType": "Oxygen",
+                        "biaya": 165000
+                    }
+                ],
                 "kembali": [
                     {
+                        "tanggal": "2026-09-05",
+                        "lokasi": "Cargil-Repin",
+                        "qty": 4,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
                         "tanggal": "2026-09-10",
-                        "lokasi": "Site Air Upas",
+                        "lokasi": "Tanah Merah Tayap",
+                        "qty": 4,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-08",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 2,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-12",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 3,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-12",
+                        "lokasi": "Hampul/ Kebanteng",
+                        "qty": 3,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-15",
+                        "lokasi": "Kelampai",
+                        "qty": 3,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-15",
+                        "lokasi": "Hampul/ Kebanteng",
+                        "qty": 1,
+                        "keterangan": "Minta isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-16",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 2,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-05",
+                        "lokasi": "PT BAP Pagar Mentimun",
                         "qty": 1,
                         "keterangan": "Minta Isi Ulang",
                         "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-17",
+                        "lokasi": "Tanah Merah Tayap",
+                        "qty": 2,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-15",
+                        "lokasi": "BGA-SJYE",
+                        "qty": 1,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "Oxygen"
+                    },
+                    {
+                        "tanggal": "2026-09-11",
+                        "lokasi": "Site Air Upas",
+                        "qty": 3,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "Oxygen"
+                    },
+                    {
+                        "tanggal": "2026-09-15",
+                        "lokasi": "Hampul/ Kebanteng",
+                        "qty": 1,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "Oxygen"
+                    },
+                    {
+                        "tanggal": "2026-09-16",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 1,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "Oxygen"
+                    },
+                    {
+                        "tanggal": "2026-09-18",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 1,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-20",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 3,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "lokasi": "Kelampai",
+                        "qty": 2,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "lokasi": "Cargil-Repin",
+                        "qty": 3,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-25",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 2,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "LPG 12 Kg"
+                    },
+                    {
+                        "tanggal": "2026-09-25",
+                        "lokasi": "PT BAP Pagar Mentimun",
+                        "qty": 1,
+                        "keterangan": "Minta Isi Ulang",
+                        "tubeType": "Oxygen"
                     }
                 ],
                 "refill": [],
@@ -19,33 +297,254 @@
                 "opname": [],
                 "hutang": [],
                 "stokAsetAdjustment": {
-                    "LPG 12 Kg||Site Air Upas": 0,
-                    "LPG 12 Kg||Kelampai": 0,
-                    "LPG 12 Kg||Kebanteng\/Hampul": 0,
-                    "LPG 12 Kg||Repin": 0,
-                    "LPG 12 Kg||SJYE": 0,
-                    "LPG 12 Kg||PT BAP Pagar Mentimun": 0,
-                    "LPG 12 Kg||PT RKA Pesaguan": 0,
-                    "LPG 12 Kg||Balai Berkuak": 0,
-                    "LPG 12 Kg||Tanah Merah Tayap": 0,
-                    "LPG 12 Kg||WS Sungai Awan": 0
+                    "LPG 12 Kg||Site Air Upas": 4,
+                    "LPG 12 Kg||Kelampai": 10,
+                    "LPG 12 Kg||Kebanteng/Hampul": 10,
+                    "LPG 12 Kg||Repin": 8,
+                    "LPG 12 Kg||SJYE": 3,
+                    "LPG 12 Kg||PT BAP Pagar Mentimun": 7,
+                    "LPG 12 Kg||PT RKA Pesaguan": 1,
+                    "LPG 12 Kg||Balai Berkuak": 3,
+                    "LPG 12 Kg||Tanah Merah Tayap": 8,
+                    "LPG 12 Kg||WS Sungai Awan": 0,
+                    "LPG 3 Kg||Site Air Upas": 0,
+                    "LPG 3 Kg||Kelampai": 0,
+                    "LPG 3 Kg||Kebanteng/Hampul": 2,
+                    "LPG 3 Kg||Repin": 0,
+                    "LPG 3 Kg||SJYE": 0,
+                    "LPG 3 Kg||PT BAP Pagar Mentimun": 0,
+                    "LPG 3 Kg||PT RKA Pesaguan": 0,
+                    "LPG 3 Kg||Balai Berkuak": 3,
+                    "LPG 3 Kg||Tanah Merah Tayap": 0,
+                    "LPG 3 Kg||WS Sungai Awan": 0,
+                    "Oxygen||Site Air Upas": 10,
+                    "Oxygen||Kelampai": 8,
+                    "Oxygen||Kebanteng/Hampul": 4,
+                    "Oxygen||Repin": 3,
+                    "Oxygen||SJYE": 3,
+                    "Oxygen||PT BAP Pagar Mentimun": 3,
+                    "Oxygen||PT RKA Pesaguan": 2,
+                    "Oxygen||Balai Berkuak": 2,
+                    "Oxygen||Tanah Merah Tayap": 2,
+                    "Oxygen||WS Sungai Awan": 0,
+                    "LPG 3 Kg||Hampul/ Kebanteng": 2,
+                    "LPG 3 Kg||Cargil-Repin": 0,
+                    "LPG 3 Kg||BGA-SJYE": 0,
+                    "LPG 3 Kg||CV. USL Pagar Mentinum": 0,
+                    "LPG 3 Kg||Hampul Replanting": 0,
+                    "LPG 12 Kg||Hampul/ Kebanteng": 10,
+                    "LPG 12 Kg||Cargil-Repin": 8,
+                    "LPG 12 Kg||BGA-SJYE": 3,
+                    "LPG 12 Kg||CV. USL Pagar Mentinum": 0,
+                    "LPG 12 Kg||Hampul Replanting": 0,
+                    "Oxygen||Hampul/ Kebanteng": 4,
+                    "Oxygen||Cargil-Repin": 3,
+                    "Oxygen||BGA-SJYE": 3,
+                    "Oxygen||CV. USL Pagar Mentinum": 0,
+                    "Oxygen||Hampul Replanting": 0
                 },
-                "stokHarian": []
+                "stokHarian": [
+                    {
+                        "tanggal": "2026-09-21",
+                        "items": [
+                            {
+                                "tubeType": "LPG 12 Kg",
+                                "kosong": 3,
+                                "isi": 12,
+                                "total": 15
+                            },
+                            {
+                                "tubeType": "LPG 3 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "LPG 5,5 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "LPG 50 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "Oxygen",
+                                "kosong": 16,
+                                "isi": 33,
+                                "total": 49
+                            },
+                            {
+                                "tubeType": "Acetylene",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            }
+                        ],
+                        "tubeType": "LPG 12 Kg",
+                        "kosong": 3,
+                        "isi": 12,
+                        "total": 15
+                    },
+                    {
+                        "tanggal": "2026-09-23",
+                        "items": [
+                            {
+                                "tubeType": "LPG 12 Kg",
+                                "kosong": 2,
+                                "isi": 4,
+                                "total": 6
+                            },
+                            {
+                                "tubeType": "LPG 3 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "LPG 5,5 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "LPG 50 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "Oxygen",
+                                "kosong": 16,
+                                "isi": 28,
+                                "total": 44
+                            },
+                            {
+                                "tubeType": "Acetylene",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            }
+                        ],
+                        "tubeType": "LPG 12 Kg",
+                        "kosong": 2,
+                        "isi": 4,
+                        "total": 6
+                    },
+                    {
+                        "tanggal": "2026-09-24",
+                        "items": [
+                            {
+                                "tubeType": "LPG 12 Kg",
+                                "kosong": 0,
+                                "isi": 11,
+                                "total": 11
+                            },
+                            {
+                                "tubeType": "LPG 3 Kg",
+                                "kosong": 2,
+                                "isi": 0,
+                                "total": 2
+                            },
+                            {
+                                "tubeType": "LPG 5,5 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "LPG 50 Kg",
+                                "kosong": 1,
+                                "isi": 1,
+                                "total": 2
+                            },
+                            {
+                                "tubeType": "Oxygen",
+                                "kosong": 16,
+                                "isi": 27,
+                                "total": 43
+                            },
+                            {
+                                "tubeType": "Acetylene",
+                                "kosong": 0,
+                                "isi": 1,
+                                "total": 1
+                            }
+                        ],
+                        "tubeType": "LPG 12 Kg",
+                        "kosong": 0,
+                        "isi": 11,
+                        "total": 11
+                    },
+                    {
+                        "tanggal": "2026-09-28",
+                        "items": [
+                            {
+                                "tubeType": "LPG 12 Kg",
+                                "kosong": 9,
+                                "isi": 9,
+                                "total": 18
+                            },
+                            {
+                                "tubeType": "LPG 3 Kg",
+                                "kosong": 2,
+                                "isi": 0,
+                                "total": 2
+                            },
+                            {
+                                "tubeType": "LPG 5,5 Kg",
+                                "kosong": 0,
+                                "isi": 0,
+                                "total": 0
+                            },
+                            {
+                                "tubeType": "LPG 50 Kg",
+                                "kosong": 1,
+                                "isi": 1,
+                                "total": 2
+                            },
+                            {
+                                "tubeType": "Oxygen",
+                                "kosong": 22,
+                                "isi": 27,
+                                "total": 49
+                            },
+                            {
+                                "tubeType": "Acetylene",
+                                "kosong": 0,
+                                "isi": 1,
+                                "total": 1
+                            }
+                        ],
+                        "tubeType": "LPG 12 Kg",
+                        "kosong": 9,
+                        "isi": 9,
+                        "total": 18
+                    }
+                ]
             },
-            "settings_json": [],
+            "settings_json": {
+                "tarifRefill": 0,
+                "tarifAset": 0
+            },
             "master_lokasi_json": [
                 "Site Air Upas",
                 "Kelampai",
-                "Kebanteng\/Hampul",
-                "Repin",
-                "SJYE",
+                "Hampul/ Kebanteng",
+                "Cargil-Repin",
+                "BGA-SJYE",
                 "PT BAP Pagar Mentimun",
                 "PT RKA Pesaguan",
                 "Balai Berkuak",
                 "Tanah Merah Tayap",
-                "WS Sungai Awan"
+                "WS Sungai Awan",
+                "CV. USL Pagar Mentinum",
+                "Hampul Replanting"
             ],
-            "updated_at": "2026-09-10 04:44:15"
+            "updated_at": "2026-09-29T02:25:03Z"
         }
     },
     "sessions": [],
