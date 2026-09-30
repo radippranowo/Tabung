@@ -1,0 +1,15 @@
+services:
+  tabung:
+    build: .
+    container_name: tabung_app
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - RAILWAY_VOLUME_MOUNT_PATH=/app/data
+    volumes:
+      - tabung_data:/app/data
+
+volumes:
+  tabung_data:

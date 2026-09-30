@@ -3,4 +3,5 @@ vendor/
 *.log
 .env
 .DS_Store
-data.json
+*.tmp.*
+data/
