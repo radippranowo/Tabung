@@ -35,7 +35,11 @@ function loadJSON(string $filePath): array {
         return ['users' => [], 'sessions' => [], 'data' => []];
     }
     $content = file_get_contents($filePath);
-    return $content ? json_decode($content, true) : ['users' => [], 'sessions' => [], 'data' => []];
+    if (!$content) {
+        return ['users' => [], 'sessions' => [], 'data' => []];
+    }
+    $decoded = json_decode($content, true);
+    return is_array($decoded) ? $decoded : ['users' => [], 'sessions' => [], 'data' => []];
 }
 
 // Helper function: Save JSON data (atomic write via temp file + rename)
